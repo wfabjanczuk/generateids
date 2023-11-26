@@ -1,7 +1,20 @@
 package main
 
-import "github.com/wfabjanczuk/id/generator"
+import (
+	"fmt"
+	"log"
+
+	"github.com/wfabjanczuk/id/generator"
+)
 
 func main() {
-	generator.Generate(10, 10, []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"))
+	results, err := generator.Generate(1000, 10, []byte("ABCD"))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, id := range results {
+		fmt.Println(string(id))
+	}
 }
