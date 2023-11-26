@@ -1,42 +1,14 @@
 package unique
 
 import (
-	"fmt"
-	"math"
 	"math/rand"
 )
-
-func newUniquenessError(totalToGenerate, eachLength, totalChars, maxToGenerate int) error {
-	return fmt.Errorf(
-		"impossible to generate %d unique IDs with %d length each and %d total chars; maximum of %d unique IDs can be generated",
-		totalToGenerate, eachLength, totalChars, maxToGenerate,
-	)
-}
-
-func validate(totalToGenerate, eachLength, totalChars int) error {
-	maxToGenerate := pow(totalChars, eachLength)
-	if totalToGenerate > maxToGenerate {
-		return newUniquenessError(totalToGenerate, eachLength, totalChars, maxToGenerate)
-	}
-	return nil
-}
-
-func pow(base, exponent int) int {
-	n := 1
-	for i := 0; i < exponent; i++ {
-		n *= base
-		if n <= 0 {
-			return math.MaxInt
-		}
-	}
-	return n
-}
 
 func Generate(totalToGenerate, eachLength int, charSet []byte) ([][]byte, error) {
 	totalChars := len(charSet)
 	charIndices := newCharIndicesGenerator(totalChars)
 
-	err := validate(totalToGenerate, eachLength, totalChars)
+	err := validate(totalToGenerate, eachLength, charSet)
 	if err != nil {
 		return nil, err
 	}
