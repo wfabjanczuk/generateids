@@ -1,9 +1,11 @@
-package generator
+package unique
 
 import (
 	"fmt"
 	"testing"
 )
+
+const alphanumericCharSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 func TestGenerate(t *testing.T) {
 	t.Run("returns error when not enough unique combinations", func(t *testing.T) {
@@ -58,6 +60,26 @@ func runUniquenessTest(t *testing.T, totalToGenerate, eachLength int, charset []
 				t.Fatalf("expected unique IDs, got duplicated %s", id)
 			}
 			uniqueIDs[string(id)] = struct{}{}
+		}
+	})
+}
+
+func BenchmarkGenerate(b *testing.B) {
+	runGenerateBenchmark(b, 1048576, 20, []byte("AB"))
+
+	runGenerateBenchmark(b, 1, 128, []byte(alphanumericCharSet))
+	runGenerateBenchmark(b, 100, 128, []byte(alphanumericCharSet))
+	runGenerateBenchmark(b, 10000, 128, []byte(alphanumericCharSet))
+}
+
+func runGenerateBenchmark(b *testing.B, totalToGenerate, eachLength int, charset []byte) {
+	testName := fmt.Sprintf("generate %d unique IDs with %d length each from %d total chars",
+		totalToGenerate, eachLength, len(charset),
+	)
+
+	b.Run(testName, func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			_, _ = Generate(totalToGenerate, eachLength, charset)
 		}
 	})
 }
