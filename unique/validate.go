@@ -10,12 +10,12 @@ var (
 	ErrTotalToGenerateInvalid = errors.New("number of requested IDs must be greater than zero")
 	ErrEachLengthInvalid      = errors.New("length of requested IDs must be greater than zero")
 
-	ErrCharSetInvalid = errors.New("invalid character set")
-	ErrCharSetEmpty   = fmt.Errorf("%w: empty", ErrCharSetInvalid)
+	ErrCharListInvalid = errors.New("invalid character list")
+	ErrCharListEmpty   = fmt.Errorf("%w: empty", ErrCharListInvalid)
 )
 
 func newCharacterDuplicatedError(duplicated byte) error {
-	return fmt.Errorf("%w: duplicated character %s", ErrCharSetInvalid, string(duplicated))
+	return fmt.Errorf("%w: duplicated character %s", ErrCharListInvalid, string(duplicated))
 }
 
 func newUniquenessError(totalToGenerate, eachLength, totalChars, maxToGenerate int) error {
@@ -25,7 +25,7 @@ func newUniquenessError(totalToGenerate, eachLength, totalChars, maxToGenerate i
 	)
 }
 
-func validate(totalToGenerate, eachLength int, charSet []byte) error {
+func validate(totalToGenerate, eachLength int, charList []byte) error {
 	if totalToGenerate <= 0 {
 		return ErrTotalToGenerateInvalid
 	}
@@ -34,13 +34,13 @@ func validate(totalToGenerate, eachLength int, charSet []byte) error {
 		return ErrEachLengthInvalid
 	}
 
-	totalChars := len(charSet)
+	totalChars := len(charList)
 	if totalChars == 0 {
-		return ErrCharSetEmpty
+		return ErrCharListEmpty
 	}
 
 	uniqueChars := make(map[byte]struct{})
-	for _, char := range charSet {
+	for _, char := range charList {
 		_, exists := uniqueChars[char]
 		if exists {
 			return newCharacterDuplicatedError(char)

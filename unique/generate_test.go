@@ -5,16 +5,16 @@ import (
 	"testing"
 )
 
-var alphanumericCharSet = []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+var alphanumericCharList = []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
 func TestGenerate(t *testing.T) {
-	runExpectedErrorTest(t, "returns error when number of requested IDs is negative", -10, 1, alphanumericCharSet)
-	runExpectedErrorTest(t, "returns error when number of requested IDs is zero", 0, 1, alphanumericCharSet)
+	runExpectedErrorTest(t, "returns error when number of requested IDs is negative", -10, 1, alphanumericCharList)
+	runExpectedErrorTest(t, "returns error when number of requested IDs is zero", 0, 1, alphanumericCharList)
 
-	runExpectedErrorTest(t, "returns error when length of requested IDs is negative", 10, -1, alphanumericCharSet)
-	runExpectedErrorTest(t, "returns error when length of requested IDs is zero", 10, 0, alphanumericCharSet)
+	runExpectedErrorTest(t, "returns error when length of requested IDs is negative", 10, -1, alphanumericCharList)
+	runExpectedErrorTest(t, "returns error when length of requested IDs is zero", 10, 0, alphanumericCharList)
 
-	runExpectedErrorTest(t, "returns error when character set is empty", 10, 1, nil)
+	runExpectedErrorTest(t, "returns error when character list is empty", 10, 1, nil)
 	runExpectedErrorTest(t, "returns error when character is duplicated", 10, 1, []byte("AA"))
 	runExpectedErrorTest(t, "returns error when not enough unique combinations", 10, 1, []byte("AB"))
 
@@ -39,7 +39,7 @@ func TestGenerate(t *testing.T) {
 
 }
 
-func runExpectedErrorTest(t *testing.T, testName string, totalToGenerate, eachLength int, charSet []byte) {
+func runExpectedErrorTest(t *testing.T, testName string, totalToGenerate, eachLength int, charList []byte) {
 	t.Run(testName, func(t *testing.T) {
 		_, err := Generate(10, 1, nil)
 
@@ -49,13 +49,13 @@ func runExpectedErrorTest(t *testing.T, testName string, totalToGenerate, eachLe
 	})
 }
 
-func runUniquenessTest(t *testing.T, totalToGenerate, eachLength int, charSet []byte) {
+func runUniquenessTest(t *testing.T, totalToGenerate, eachLength int, charList []byte) {
 	testName := fmt.Sprintf("returns only unique IDs for %d results with %d length each and %d total chars",
-		totalToGenerate, eachLength, len(charSet),
+		totalToGenerate, eachLength, len(charList),
 	)
 
 	t.Run(testName, func(t *testing.T) {
-		results, err := Generate(totalToGenerate, eachLength, charSet)
+		results, err := Generate(totalToGenerate, eachLength, charList)
 
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
@@ -79,19 +79,19 @@ func runUniquenessTest(t *testing.T, totalToGenerate, eachLength int, charSet []
 func BenchmarkGenerate(b *testing.B) {
 	runGenerateBenchmark(b, 1048576, 20, []byte("AB"))
 
-	runGenerateBenchmark(b, 1, 128, alphanumericCharSet)
-	runGenerateBenchmark(b, 100, 128, alphanumericCharSet)
-	runGenerateBenchmark(b, 10000, 128, alphanumericCharSet)
+	runGenerateBenchmark(b, 1, 128, alphanumericCharList)
+	runGenerateBenchmark(b, 100, 128, alphanumericCharList)
+	runGenerateBenchmark(b, 10000, 128, alphanumericCharList)
 }
 
-func runGenerateBenchmark(b *testing.B, totalToGenerate, eachLength int, charSet []byte) {
+func runGenerateBenchmark(b *testing.B, totalToGenerate, eachLength int, charList []byte) {
 	testName := fmt.Sprintf("generate %d unique IDs with %d length each from %d total chars",
-		totalToGenerate, eachLength, len(charSet),
+		totalToGenerate, eachLength, len(charList),
 	)
 
 	b.Run(testName, func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, _ = Generate(totalToGenerate, eachLength, charSet)
+			_, _ = Generate(totalToGenerate, eachLength, charList)
 		}
 	})
 }

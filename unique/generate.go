@@ -4,11 +4,11 @@ import (
 	"math/rand"
 )
 
-func Generate(totalToGenerate, eachLength int, charSet []byte) ([][]byte, error) {
-	totalChars := len(charSet)
+func Generate(totalToGenerate, eachLength int, charList []byte) ([][]byte, error) {
+	totalChars := len(charList)
 	charIndices := newCharIndicesGenerator(totalChars)
 
-	err := validate(totalToGenerate, eachLength, charSet)
+	err := validate(totalToGenerate, eachLength, charList)
 	if err != nil {
 		return nil, err
 	}
@@ -18,51 +18,58 @@ func Generate(totalToGenerate, eachLength int, charSet []byte) ([][]byte, error)
 		results[r] = make([]byte, eachLength)
 	}
 
-	var currentColumnJobs, nextColumnJobs [][]int
-	currentColumnJobs = append(nextColumnJobs, createJob(totalToGenerate, charSet, charIndices))
+	var currentColumnJobsList, nextColumnJobsList []charWritingJob
+	currentColumnJobsList = generateJobs(nextColumnJobsList, totalToGenerate, charList, charIndices)
 
 	for c := 0; c < eachLength; c++ {
 		r := 0
-		for _, job := range currentColumnJobs {
-			for charIndex, charOccurrences := range job {
-				if charOccurrences == 0 {
-					continue
-				}
+		for _, job := range currentColumnJobsList {
+			for j := 0; j < job.count; j++ {
+				results[r+j][c] = job.char
+			}
+			r += job.count
 
-				for j := 0; j < charOccurrences; j++ {
-					results[r+j][c] = charSet[charIndex]
-				}
-				r += charOccurrences
-
-				newJob := createJob(charOccurrences, charSet, charIndices)
-				if newJob != nil {
-					nextColumnJobs = append(nextColumnJobs, newJob)
-				}
+			if c < eachLength-1 {
+				nextColumnJobsList = generateJobs(nextColumnJobsList, job.count, charList, charIndices)
 			}
 		}
 
-		currentColumnJobs = nextColumnJobs
-		nextColumnJobs = make([][]int, 0)
+		currentColumnJobsList = nextColumnJobsList
+		nextColumnJobsList = make([]charWritingJob, 0)
 	}
 
 	return results, nil
 }
 
-func createJob(totalToGenerate int, charSet []byte, charIndices *charIndicesGenerator) []int {
-	totalChars := len(charSet)
-	minCharOccurrences := totalToGenerate / totalChars
-	job := make([]int, totalChars)
+type charWritingJob struct {
+	char  byte
+	count int
+}
 
-	for i := range charSet {
-		job[i] = minCharOccurrences
+func generateJobs(jobsList []charWritingJob, totalToGenerate int, charList []byte, charIndices *charIndicesGenerator) []charWritingJob {
+	totalChars := len(charList)
+	minCharOccurrences := totalToGenerate / totalChars
+	charOccurrencesList := make([]int, totalChars)
+
+	for i := range charList {
+		charOccurrencesList[i] = minCharOccurrences
 	}
 
 	capacityLeft := totalToGenerate - totalChars*minCharOccurrences
 	for i := 0; i < capacityLeft; i++ {
-		job[charIndices.next()]++
+		charOccurrencesList[charIndices.next()]++
 	}
 
-	return job
+	for charIndex, charOccurrences := range charOccurrencesList {
+		if charOccurrences > 0 {
+			jobsList = append(jobsList, charWritingJob{
+				char:  charList[charIndex],
+				count: charOccurrences},
+			)
+		}
+	}
+
+	return jobsList
 }
 
 type charIndicesGenerator struct {
