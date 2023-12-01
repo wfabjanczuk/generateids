@@ -3,36 +3,25 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
-	"time"
+	"math"
 
 	"github.com/wfabjanczuk/id/unique"
 )
 
 func main() {
-	now := time.Now()
-	defer func() {
-		fmt.Printf("duration: %v\n", time.Since(now))
-	}()
-
-	resultsChan, err := unique.GenerateChannel(1000000, 128, []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"))
-	check(err)
-
-	f, err := os.Create("results.txt")
-	check(err)
-	defer f.Close()
-
-	for id := range resultsChan {
-		_, err = f.Write(id)
-		check(err)
-
-		_, err = f.WriteString("\n")
-		check(err)
-	}
-}
-
-func check(err error) {
+	alphanumericCharList := []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+	resultsChan, err := unique.GenerateChannel(math.MaxInt, 128, alphanumericCharList)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	total, mod10k := 0, 0
+	for id := range resultsChan {
+		total++
+
+		if mod10k++; mod10k == 10000 {
+			fmt.Println(string(id), "| total:", total)
+			mod10k = 0
+		}
 	}
 }
