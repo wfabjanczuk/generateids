@@ -4,49 +4,114 @@ import (
 	"math/rand"
 )
 
-func Generate(totalToGenerate, eachLength int, charList []byte) ([][]byte, error) {
-	totalChars := len(charList)
-	charIndices := newCharIndicesGenerator(totalChars)
-
-	err := validate(totalToGenerate, eachLength, charList)
+func GenerateArray(totalToGenerate, eachLength int, charList []byte) ([][]byte, error) {
+	resultsChan, err := GenerateChannel(totalToGenerate, eachLength, charList)
 	if err != nil {
 		return nil, err
 	}
 
-	results := make([][]byte, totalToGenerate)
-	for r := range results {
-		results[r] = make([]byte, eachLength)
-	}
-
-	var currentColumnJobsList, nextColumnJobsList []charWritingJob
-	currentColumnJobsList = generateJobs(nextColumnJobsList, totalToGenerate, charList, charIndices)
-
-	for c := 0; c < eachLength; c++ {
-		r := 0
-		for _, job := range currentColumnJobsList {
-			for j := 0; j < job.count; j++ {
-				results[r+j][c] = job.char
-			}
-			r += job.count
-
-			if c < eachLength-1 {
-				nextColumnJobsList = generateJobs(nextColumnJobsList, job.count, charList, charIndices)
-			}
-		}
-
-		currentColumnJobsList = nextColumnJobsList
-		nextColumnJobsList = make([]charWritingJob, 0)
+	results := make([][]byte, 0, totalToGenerate)
+	for id := range resultsChan {
+		results = append(results, id)
 	}
 
 	return results, nil
 }
 
-type charWritingJob struct {
-	char  byte
-	count int
+func GenerateChannel(totalToGenerate, eachLength int, charList []byte) (<-chan []byte, error) {
+	err := validate(totalToGenerate, eachLength, charList)
+	if err != nil {
+		return nil, err
+	}
+
+	resultsChan := make(chan []byte, 1000)
+	go streamToChannel(resultsChan, totalToGenerate, eachLength, charList)
+
+	return resultsChan, nil
 }
 
-func generateJobs(jobsList []charWritingJob, totalToGenerate int, charList []byte, charIndices *charIndicesGenerator) []charWritingJob {
+func streamToChannel(resultsChan chan<- []byte, totalToGenerate, eachLength int, charList []byte) {
+	totalChars := len(charList)
+	charIndices := newCharIndicesGenerator(totalChars)
+
+	columns := make([]*charWritingJobsList, eachLength)
+	columns[0] = generateJobsList(totalToGenerate, charList, charIndices)
+
+	r := 0
+	for r < totalToGenerate {
+		id := make([]byte, eachLength)
+		id[0] = columns[0].nextChar()
+
+		c := 1
+		for c < eachLength {
+			jobsList := columns[c]
+			if jobsList.isEmpty() {
+				jobsList = generateJobsList(columns[c-1].currentCharCount, charList, charIndices)
+				columns[c] = jobsList
+			}
+
+			id[c] = jobsList.nextChar()
+			c++
+		}
+		resultsChan <- id
+		r++
+	}
+
+	close(resultsChan)
+}
+
+type charWritingJobsList struct {
+	head             *charWritingJob
+	currentCharCount int
+}
+
+func (l *charWritingJobsList) isEmpty() bool {
+	if l == nil {
+		return true
+	}
+	return l.head == nil
+}
+
+func (l *charWritingJobsList) push(job *charWritingJob) {
+	if l.head == nil {
+		l.head = job
+		return
+	}
+
+	last := l.head
+	for last.next != nil {
+		last = last.next
+	}
+
+	last.next = job
+}
+
+func (l *charWritingJobsList) nextChar() byte {
+	char := l.head.char
+	l.head.written++
+
+	if l.head.written == 1 {
+		l.currentCharCount = l.head.count
+	}
+
+	if l.head.written == l.head.count {
+		tmp := l.head.next
+		l.head.next = nil
+		l.head = tmp
+	}
+
+	return char
+}
+
+type charWritingJob struct {
+	char    byte
+	count   int
+	written int
+
+	next *charWritingJob
+}
+
+func generateJobsList(totalToGenerate int, charList []byte, charIndices *charIndicesGenerator) *charWritingJobsList {
 	totalChars := len(charList)
 	minCharOccurrences := totalToGenerate / totalChars
 	charOccurrencesList := make([]int, totalChars)
@@ -60,12 +125,13 @@ func generateJobs(jobsList []charWritingJob, totalToGenerate int, charList []byt
 		charOccurrencesList[charIndices.next()]++
 	}
 
+	jobsList := &charWritingJobsList{}
 	for charIndex, charOccurrences := range charOccurrencesList {
 		if charOccurrences > 0 {
-			jobsList = append(jobsList, charWritingJob{
+			jobsList.push(&charWritingJob{
 				char:  charList[charIndex],
-				count: charOccurrences},
-			)
+				count: charOccurrences,
+			})
 		}
 	}
 

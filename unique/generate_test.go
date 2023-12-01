@@ -19,7 +19,7 @@ func TestGenerate(t *testing.T) {
 	runExpectedErrorTest(t, "returns error when not enough unique combinations", 10, 1, []byte("AB"))
 
 	t.Run("returns no error when unique combinations are possible", func(t *testing.T) {
-		results, err := Generate(4, 2, []byte("AB"))
+		results, err := GenerateArray(4, 2, []byte("AB"))
 
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
@@ -41,7 +41,7 @@ func TestGenerate(t *testing.T) {
 
 func runExpectedErrorTest(t *testing.T, testName string, totalToGenerate, eachLength int, charList []byte) {
 	t.Run(testName, func(t *testing.T) {
-		_, err := Generate(10, 1, nil)
+		_, err := GenerateArray(10, 1, nil)
 
 		if err == nil {
 			t.Fatal("expected error, got nil")
@@ -55,7 +55,7 @@ func runUniquenessTest(t *testing.T, totalToGenerate, eachLength int, charList [
 	)
 
 	t.Run(testName, func(t *testing.T) {
-		results, err := Generate(totalToGenerate, eachLength, charList)
+		results, err := GenerateArray(totalToGenerate, eachLength, charList)
 
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
@@ -91,7 +91,7 @@ func runGenerateBenchmark(b *testing.B, totalToGenerate, eachLength int, charLis
 
 	b.Run(testName, func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, _ = Generate(totalToGenerate, eachLength, charList)
+			_, _ = GenerateArray(totalToGenerate, eachLength, charList)
 		}
 	})
 }
