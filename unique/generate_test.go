@@ -39,9 +39,9 @@ func TestGenerate(t *testing.T) {
 
 }
 
-func runExpectedErrorTest(t *testing.T, testName string, totalToGenerate, eachLength int, charList []byte) {
+func runExpectedErrorTest(t *testing.T, testName string, idsToGenerate, idLength int, charList []byte) {
 	t.Run(testName, func(t *testing.T) {
-		_, err := GenerateArray(10, 1, nil)
+		_, err := GenerateArray(idsToGenerate, idLength, charList)
 
 		if err == nil {
 			t.Fatal("expected error, got nil")
@@ -49,20 +49,20 @@ func runExpectedErrorTest(t *testing.T, testName string, totalToGenerate, eachLe
 	})
 }
 
-func runUniquenessTest(t *testing.T, totalToGenerate, eachLength int, charList []byte) {
+func runUniquenessTest(t *testing.T, idsToGenerate, idLength int, charList []byte) {
 	testName := fmt.Sprintf("returns only unique IDs for %d results with %d length each and %d total chars",
-		totalToGenerate, eachLength, len(charList),
+		idsToGenerate, idLength, len(charList),
 	)
 
 	t.Run(testName, func(t *testing.T) {
-		results, err := GenerateArray(totalToGenerate, eachLength, charList)
+		results, err := GenerateArray(idsToGenerate, idLength, charList)
 
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
 
-		if len(results) != totalToGenerate {
-			t.Fatalf("expected %d results, got %d", totalToGenerate, len(results))
+		if len(results) != idsToGenerate {
+			t.Fatalf("expected %d results, got %d", idsToGenerate, len(results))
 		}
 
 		uniqueIDs := make(map[string]struct{})
@@ -84,14 +84,14 @@ func BenchmarkGenerate(b *testing.B) {
 	runGenerateBenchmark(b, 10000, 128, alphanumericCharList)
 }
 
-func runGenerateBenchmark(b *testing.B, totalToGenerate, eachLength int, charList []byte) {
+func runGenerateBenchmark(b *testing.B, idsToGenerate, idLength int, charList []byte) {
 	testName := fmt.Sprintf("generate %d unique IDs with %d length each from %d total chars",
-		totalToGenerate, eachLength, len(charList),
+		idsToGenerate, idLength, len(charList),
 	)
 
 	b.Run(testName, func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, _ = GenerateArray(totalToGenerate, eachLength, charList)
+			_, _ = GenerateArray(idsToGenerate, idLength, charList)
 		}
 	})
 }

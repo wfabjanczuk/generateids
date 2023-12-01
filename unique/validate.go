@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	ErrTotalToGenerateInvalid = errors.New("number of requested IDs must be greater than zero")
-	ErrEachLengthInvalid      = errors.New("length of requested IDs must be greater than zero")
+	ErrIdsToGenerateInvalid = errors.New("number of requested IDs must be greater than zero")
+	ErrIdLengthInvalid      = errors.New("length of requested IDs must be greater than zero")
 
 	ErrCharListInvalid = errors.New("invalid character list")
 	ErrCharListEmpty   = fmt.Errorf("%w: empty", ErrCharListInvalid)
@@ -18,20 +18,20 @@ func newCharacterDuplicatedError(duplicated byte) error {
 	return fmt.Errorf("%w: duplicated character %s", ErrCharListInvalid, string(duplicated))
 }
 
-func newUniquenessError(totalToGenerate, eachLength, totalChars, maxToGenerate int) error {
+func newUniquenessError(idsToGenerate, idLength, totalChars, maxToGenerate int) error {
 	return fmt.Errorf(
 		"impossible to generate %d unique IDs with %d length each and %d total chars; maximum of %d unique IDs can be generated",
-		totalToGenerate, eachLength, totalChars, maxToGenerate,
+		idsToGenerate, idLength, totalChars, maxToGenerate,
 	)
 }
 
-func validate(totalToGenerate, eachLength int, charList []byte) error {
-	if totalToGenerate <= 0 {
-		return ErrTotalToGenerateInvalid
+func validate(idsToGenerate, idLength int, charList []byte) error {
+	if idsToGenerate <= 0 {
+		return ErrIdsToGenerateInvalid
 	}
 
-	if eachLength <= 0 {
-		return ErrEachLengthInvalid
+	if idLength <= 0 {
+		return ErrIdLengthInvalid
 	}
 
 	totalChars := len(charList)
@@ -48,9 +48,9 @@ func validate(totalToGenerate, eachLength int, charList []byte) error {
 		uniqueChars[char] = struct{}{}
 	}
 
-	maxToGenerate := pow(totalChars, eachLength)
-	if totalToGenerate > maxToGenerate {
-		return newUniquenessError(totalToGenerate, eachLength, totalChars, maxToGenerate)
+	maxToGenerate := pow(totalChars, idLength)
+	if idsToGenerate > maxToGenerate {
+		return newUniquenessError(idsToGenerate, idLength, totalChars, maxToGenerate)
 	}
 	return nil
 }
