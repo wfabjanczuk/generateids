@@ -13,24 +13,24 @@ type uniformCharsGenerator struct {
 	currentCharCount int
 }
 
-func newUniformCharsGenerator(idsToGenerate int, charList []byte, indicesGenerator *randomIndicesGenerator) *uniformCharsGenerator {
+func newUniformCharsGenerator(idsToGenerate int, charList []byte, randomIndicesGen *randomIndicesGenerator) *uniformCharsGenerator {
 	totalChars := len(charList)
-	minCharOccurrences := idsToGenerate / totalChars
 	charOccurrencesList := make([]int, totalChars)
 
+	minCharOccurrences := idsToGenerate / totalChars
 	for i := range charList {
 		charOccurrencesList[i] = minCharOccurrences
 	}
 
 	capacityLeft := idsToGenerate - totalChars*minCharOccurrences
 	for i := 0; i < capacityLeft; i++ {
-		charOccurrencesList[indicesGenerator.nextIndex()]++
+		charOccurrencesList[randomIndicesGen.next()]++
 	}
 
-	jobsList := &uniformCharsGenerator{}
+	uniformCharsGen := &uniformCharsGenerator{}
 	for charIndex, charOccurrences := range charOccurrencesList {
 		if charOccurrences > 0 {
-			jobsList.push(&charJob{
+			uniformCharsGen.push(&charJob{
 				char:            charList[charIndex],
 				writesFinished:  0,
 				writesScheduled: charOccurrences,
@@ -38,13 +38,14 @@ func newUniformCharsGenerator(idsToGenerate int, charList []byte, indicesGenerat
 		}
 	}
 
-	return jobsList
+	return uniformCharsGen
 }
 
 func (l *uniformCharsGenerator) empty() bool {
 	if l == nil {
 		return true
 	}
+
 	return l.head == nil
 }
 
@@ -62,7 +63,7 @@ func (l *uniformCharsGenerator) push(job *charJob) {
 	last.next = job
 }
 
-func (l *uniformCharsGenerator) nextChar() byte {
+func (l *uniformCharsGenerator) next() byte {
 	char := l.head.char
 	l.head.writesFinished++
 

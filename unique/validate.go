@@ -7,8 +7,8 @@ import (
 )
 
 var (
-	ErrIdsToGenerateInvalid = errors.New("number of requested IDs must be greater than zero")
-	ErrIdLengthInvalid      = errors.New("length of requested IDs must be greater than zero")
+	ErrIdsToGenerateInvalid = errors.New("idsToGenerate must be greater than zero")
+	ErrIdLengthInvalid      = errors.New("idLength must be greater than zero")
 
 	ErrCharListInvalid = errors.New("invalid character list")
 	ErrCharListEmpty   = fmt.Errorf("%w: empty", ErrCharListInvalid)

@@ -25,7 +25,7 @@ func (ci *randomIndicesGenerator) swap(i, j int) {
 	ci.array[i], ci.array[j] = ci.array[j], ci.array[i]
 }
 
-func (ci *randomIndicesGenerator) nextIndex() int {
+func (ci *randomIndicesGenerator) next() int {
 	if ci.current == 0 {
 		rand.Shuffle(len(ci.array), ci.swap)
 	}
