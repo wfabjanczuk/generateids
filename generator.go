@@ -106,9 +106,9 @@ func (g *Generator) ToChannel(ctx context.Context) (<-chan []byte, error) {
 func (g *Generator) streamToChannel(ctx context.Context, idsChan chan<- []byte) {
 	defer close(idsChan)
 
-	randomIndicesGen := internal.NewRandomIndicesGenerator(g.random, len(g.charList))
+	uniformIndicesGen := internal.NewUniformIndicesGenerator(g.random, len(g.charList))
 	columns := make([]*internal.UniformCharsGenerator, g.idLength)
-	columns[0] = internal.NewUniformCharsGenerator(g.idsScheduled, g.charList, randomIndicesGen)
+	columns[0] = internal.NewUniformCharsGenerator(g.idsScheduled, g.charList, uniformIndicesGen)
 
 	idsCreated := 0
 	for idsCreated < g.idsScheduled {
@@ -127,7 +127,7 @@ func (g *Generator) streamToChannel(ctx context.Context, idsChan chan<- []byte) 
 			uniformCharsGen := columns[columnIndex]
 			if uniformCharsGen.Empty() {
 				previousColumnJobSize := columns[columnIndex-1].CurrentJobSize
-				uniformCharsGen = internal.NewUniformCharsGenerator(previousColumnJobSize, g.charList, randomIndicesGen)
+				uniformCharsGen = internal.NewUniformCharsGenerator(previousColumnJobSize, g.charList, uniformIndicesGen)
 				columns[columnIndex] = uniformCharsGen
 			}
 

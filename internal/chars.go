@@ -13,7 +13,7 @@ type UniformCharsGenerator struct {
 	CurrentJobSize int
 }
 
-func NewUniformCharsGenerator(idsToGenerate int, charList []byte, randomIndicesGen *RandomIndicesGenerator) *UniformCharsGenerator {
+func NewUniformCharsGenerator(idsToGenerate int, charList []byte, uniformIndicesGen *UniformIndicesGenerator) *UniformCharsGenerator {
 	totalChars := len(charList)
 	charOccurrencesList := make([]int, totalChars)
 
@@ -24,7 +24,7 @@ func NewUniformCharsGenerator(idsToGenerate int, charList []byte, randomIndicesG
 
 	capacityLeft := idsToGenerate - totalChars*minCharOccurrences
 	for i := 0; i < capacityLeft; i++ {
-		charOccurrencesList[randomIndicesGen.Next()]++
+		charOccurrencesList[uniformIndicesGen.next()]++
 	}
 
 	uniformCharsGen := &UniformCharsGenerator{}

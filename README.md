@@ -9,7 +9,7 @@ APPIQDB2C25MCPVUDL14NGELTYTMU8J8LDXNORXZDCIHCGRWDHW6VJWQJKUFZ8AC
 ...
 ```
 
-Library for generating large number of unique IDs in a randomized order.
+Library for generating a large number of unique IDs in a randomized order.
 Provides a channel for retrieving them one by one.
 
 ## Description

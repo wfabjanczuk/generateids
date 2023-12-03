@@ -4,40 +4,36 @@ import (
 	"math/rand"
 )
 
-type RandomIndicesGenerator struct {
+type UniformIndicesGenerator struct {
 	random  *rand.Rand
-	array   []int
+	indices []int
 	length  int
 	current int
 }
 
-func NewRandomIndicesGenerator(random *rand.Rand, total int) *RandomIndicesGenerator {
+func NewUniformIndicesGenerator(random *rand.Rand, total int) *UniformIndicesGenerator {
 	indicesArray := make([]int, total)
 	for i := 0; i < total; i++ {
 		indicesArray[i] = i
 	}
 
-	return &RandomIndicesGenerator{
+	random.Shuffle(len(indicesArray), func(i, j int) {
+		indicesArray[i], indicesArray[j] = indicesArray[j], indicesArray[i]
+	})
+
+	return &UniformIndicesGenerator{
 		random:  random,
-		array:   indicesArray,
+		indices: indicesArray,
 		length:  total,
 		current: 0,
 	}
 }
 
-func (ig *RandomIndicesGenerator) Next() int {
-	if ig.current == 0 {
-		ig.random.Shuffle(len(ig.array), ig.swap)
-	}
-
+func (ig *UniformIndicesGenerator) next() int {
 	ig.current++
 	if ig.current == ig.length {
 		ig.current = 0
 	}
 
-	return ig.array[ig.current]
-}
-
-func (ig *RandomIndicesGenerator) swap(i, j int) {
-	ig.array[i], ig.array[j] = ig.array[j], ig.array[i]
+	return ig.indices[ig.current]
 }
