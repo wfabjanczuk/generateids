@@ -1,6 +1,8 @@
 package unique
 
-import "math/rand"
+import (
+	"math/rand"
+)
 
 type randomIndicesGenerator struct {
 	array   []int

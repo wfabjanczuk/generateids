@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"time"
 
 	"github.com/wfabjanczuk/id/unique"
 )
@@ -16,6 +17,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	now := time.Now()
 	ids, err := generator.ToChannel(context.Background())
 	if err != nil {
 		log.Fatal(err, ids)
@@ -25,7 +27,7 @@ func main() {
 	for id := range ids {
 		total++
 		if mod10k++; mod10k == 10000 {
-			fmt.Println(string(id), "| total:", total)
+			fmt.Println(string(id), "| total:", total, "| duration:", time.Since(now))
 			mod10k = 0
 		}
 	}

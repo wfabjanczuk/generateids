@@ -12,6 +12,7 @@ var ErrUsed = errors.New("generator can be used only once")
 const bufferSize = 100
 
 type Generator struct {
+	encoder      *symmetricEncoder
 	charList     []byte
 	idLength     int
 	idsScheduled int
@@ -28,6 +29,7 @@ func NewGenerator(idsToGenerate, idLength int, charList []byte) (*Generator, err
 	}
 
 	return &Generator{
+		encoder:      newSymmetricEncoder(idLength, charList),
 		charList:     charList,
 		idLength:     idLength,
 		idsScheduled: idsToGenerate,
@@ -112,6 +114,8 @@ func (g *Generator) streamToChannel(ctx context.Context, idsChan chan<- []byte) 
 			id[c] = uniformCharsGen.next()
 			c++
 		}
+
+		g.encoder.encode(id)
 		idsChan <- id
 		idsCreated++
 	}
