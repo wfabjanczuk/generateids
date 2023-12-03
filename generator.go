@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ErrUsed       = errors.New("generator can be used only once")
+	ErrUsed       = errors.New("generator can be used only once: create a new instance for another stream of ids")
 	ErrValidation = errors.New("validation error")
 )
 

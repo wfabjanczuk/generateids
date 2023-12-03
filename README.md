@@ -45,7 +45,7 @@ func (g *Generator) ToChannel(ctx context.Context) (<-chan []byte, error)
 **Generator** stops generating new ids when the provided context is cancelled
 and wrapped context error is available, for example:
 
-```go
+```
 stopped generating ids at 59079: context deadline exceeded
 ```
 
@@ -61,11 +61,11 @@ func (g *Generator) Err() error
 
 ### Warning
 
-**Generator** is designed for one-time use and running either `ToArray` or `ToChannel` methods again
+**Generator** struct is designed for a one-time use. Running either `ToArray` or `ToChannel` methods again
 will result in an error:
 
-```go
-generator can be used only once
+```
+generator can be used only once: create a new instance for another stream of ids
 ```
 
 ## Examples
