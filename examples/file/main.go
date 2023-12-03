@@ -24,7 +24,7 @@ func main() {
 	//ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	//defer cancel()
 
-	resultsChan, err := generator.ToChannel(ctx)
+	idsChan, err := generator.ToChannel(ctx)
 	check(err)
 
 	f, err := os.Create("results.txt")
@@ -34,7 +34,7 @@ func main() {
 	bufWriter := bufio.NewWriter(f)
 	defer bufWriter.Flush()
 
-	for id := range resultsChan {
+	for id := range idsChan {
 		_, err = bufWriter.Write(id)
 		check(err)
 
