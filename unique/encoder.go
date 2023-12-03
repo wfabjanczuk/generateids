@@ -14,7 +14,7 @@ type pair struct {
 	c2 byte
 }
 
-func newSymmetricEncoder(idLength int, charList []byte) *symmetricEncoder {
+func newSymmetricEncoder(random *rand.Rand, idLength int, charList []byte) *symmetricEncoder {
 	totalChars := len(charList)
 
 	pairs := make([]pair, 0, totalChars*totalChars)
@@ -26,7 +26,7 @@ func newSymmetricEncoder(idLength int, charList []byte) *symmetricEncoder {
 
 	shuffledPairs := make([]pair, totalChars*totalChars)
 	copy(shuffledPairs, pairs)
-	rand.Shuffle(totalChars*totalChars, func(i, j int) {
+	random.Shuffle(totalChars*totalChars, func(i, j int) {
 		shuffledPairs[i], shuffledPairs[j] = shuffledPairs[j], shuffledPairs[i]
 	})
 

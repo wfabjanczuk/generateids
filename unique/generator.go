@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"sync"
+	"time"
 )
 
 var ErrUsed = errors.New("generator can be used only once")
@@ -12,6 +14,7 @@ var ErrUsed = errors.New("generator can be used only once")
 const bufferSize = 100
 
 type Generator struct {
+	random       *rand.Rand
 	encoder      *symmetricEncoder
 	charList     []byte
 	idLength     int
@@ -23,13 +26,24 @@ type Generator struct {
 }
 
 func NewGenerator(idsToGenerate, idLength int, charList []byte) (*Generator, error) {
+	random := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return newGenerator(idsToGenerate, idLength, charList, random)
+}
+
+func NewGeneratorWithSeed(idsToGenerate, idLength int, charList []byte, seed int64) (*Generator, error) {
+	random := rand.New(rand.NewSource(seed))
+	return newGenerator(idsToGenerate, idLength, charList, random)
+}
+
+func newGenerator(idsToGenerate, idLength int, charList []byte, random *rand.Rand) (*Generator, error) {
 	err := validate(idsToGenerate, idLength, charList)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Generator{
-		encoder:      newSymmetricEncoder(idLength, charList),
+		random:       random,
+		encoder:      newSymmetricEncoder(random, idLength, charList),
 		charList:     charList,
 		idLength:     idLength,
 		idsScheduled: idsToGenerate,
@@ -87,7 +101,7 @@ func (g *Generator) ToChannel(ctx context.Context) (<-chan []byte, error) {
 func (g *Generator) streamToChannel(ctx context.Context, idsChan chan<- []byte) {
 	defer close(idsChan)
 
-	randomIndicesGen := newRandomIndicesGenerator(len(g.charList))
+	randomIndicesGen := newRandomIndicesGenerator(g.random, len(g.charList))
 	columns := make([]*uniformCharsGenerator, g.idLength)
 	columns[0] = newUniformCharsGenerator(g.idsScheduled, g.charList, randomIndicesGen)
 

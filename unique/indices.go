@@ -5,37 +5,39 @@ import (
 )
 
 type randomIndicesGenerator struct {
+	random  *rand.Rand
 	array   []int
 	length  int
 	current int
 }
 
-func newRandomIndicesGenerator(total int) *randomIndicesGenerator {
+func newRandomIndicesGenerator(random *rand.Rand, total int) *randomIndicesGenerator {
 	indicesArray := make([]int, total)
 	for i := 0; i < total; i++ {
 		indicesArray[i] = i
 	}
 
 	return &randomIndicesGenerator{
+		random:  random,
 		array:   indicesArray,
 		length:  total,
 		current: 0,
 	}
 }
 
-func (ci *randomIndicesGenerator) swap(i, j int) {
-	ci.array[i], ci.array[j] = ci.array[j], ci.array[i]
+func (ig *randomIndicesGenerator) swap(i, j int) {
+	ig.array[i], ig.array[j] = ig.array[j], ig.array[i]
 }
 
-func (ci *randomIndicesGenerator) next() int {
-	if ci.current == 0 {
-		rand.Shuffle(len(ci.array), ci.swap)
+func (ig *randomIndicesGenerator) next() int {
+	if ig.current == 0 {
+		ig.random.Shuffle(len(ig.array), ig.swap)
 	}
 
-	ci.current++
-	if ci.current == ci.length {
-		ci.current = 0
+	ig.current++
+	if ig.current == ig.length {
+		ig.current = 0
 	}
 
-	return ci.array[ci.current]
+	return ig.array[ig.current]
 }

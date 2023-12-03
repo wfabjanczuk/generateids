@@ -41,21 +41,21 @@ func newUniformCharsGenerator(idsToGenerate int, charList []byte, randomIndicesG
 	return uniformCharsGen
 }
 
-func (l *uniformCharsGenerator) empty() bool {
-	if l == nil {
+func (cg *uniformCharsGenerator) empty() bool {
+	if cg == nil {
 		return true
 	}
 
-	return l.head == nil
+	return cg.head == nil
 }
 
-func (l *uniformCharsGenerator) push(job *charJob) {
-	if l.head == nil {
-		l.head = job
+func (cg *uniformCharsGenerator) push(job *charJob) {
+	if cg.head == nil {
+		cg.head = job
 		return
 	}
 
-	last := l.head
+	last := cg.head
 	for last.next != nil {
 		last = last.next
 	}
@@ -63,18 +63,18 @@ func (l *uniformCharsGenerator) push(job *charJob) {
 	last.next = job
 }
 
-func (l *uniformCharsGenerator) next() byte {
-	char := l.head.char
-	l.head.writesFinished++
+func (cg *uniformCharsGenerator) next() byte {
+	char := cg.head.char
+	cg.head.writesFinished++
 
-	if l.head.writesFinished == 1 {
-		l.currentCharCount = l.head.writesScheduled
+	if cg.head.writesFinished == 1 {
+		cg.currentCharCount = cg.head.writesScheduled
 	}
 
-	if l.head.writesFinished == l.head.writesScheduled {
-		tmp := l.head.next
-		l.head.next = nil
-		l.head = tmp
+	if cg.head.writesFinished == cg.head.writesScheduled {
+		tmp := cg.head.next
+		cg.head.next = nil
+		cg.head = tmp
 	}
 
 	return char

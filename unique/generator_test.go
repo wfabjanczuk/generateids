@@ -73,13 +73,51 @@ func runExpectedErrorTest(t *testing.T, testName string, idsToGenerate, idLength
 	})
 }
 
+func TestGenerator_Seed(t *testing.T) {
+	t.Run("generators with the same seed return the same results", func(t *testing.T) {
+		seed := int64(0)
+		idsToGenerate := 1024
+		idLength := 128
+
+		idsArray1 := generateIdsWithSeed(t, idsToGenerate, idLength, charsAlphanumeric, seed)
+		idsArray2 := generateIdsWithSeed(t, idsToGenerate, idLength, charsAlphanumeric, seed)
+
+		for index, id := range idsArray1 {
+			if string(id) != string(idsArray2[index]) {
+				t.Fatalf("expected %s, got %s", id, idsArray2[index])
+			}
+		}
+	})
+}
+
+func generateIdsWithSeed(t *testing.T, idsToGenerate, idLength int, charList []byte, seed int64) [][]byte {
+	generator, err := NewGeneratorWithSeed(idsToGenerate, idLength, charList, seed)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	idsArray, err := generator.ToArray(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	if len(idsArray) != idsToGenerate {
+		t.Fatalf("expected %d results, got %d", idsToGenerate, len(idsArray))
+	}
+
+	return idsArray
+}
+
 func TestGenerator_ToArray(t *testing.T) {
 	t.Run("returns no error when unique combinations are possible", func(t *testing.T) {
 		idsToGenerate := 4
 
 		generator, err := NewGenerator(idsToGenerate, 2, charsAB)
-		idsArray, err := generator.ToArray(context.Background())
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
 
+		idsArray, err := generator.ToArray(context.Background())
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
@@ -93,8 +131,11 @@ func TestGenerator_ToArray(t *testing.T) {
 func TestGenerator_ToChannel(t *testing.T) {
 	t.Run("returns no error when unique combinations are possible", func(t *testing.T) {
 		generator, err := NewGenerator(4, 2, charsAB)
-		idsChan, err := generator.ToChannel(context.Background())
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
 
+		idsChan, err := generator.ToChannel(context.Background())
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
@@ -131,7 +172,6 @@ func runUniquenessTest(t *testing.T, idsToGenerate, idLength int, charList []byt
 
 	t.Run(testName, func(t *testing.T) {
 		generator, err := NewGenerator(idsToGenerate, idLength, charList)
-
 		if err != nil {
 			t.Fatalf("unexpected error: %s", err)
 		}
@@ -158,8 +198,11 @@ func TestGenerator_Context(t *testing.T) {
 		cancel()
 
 		generator, err := NewGenerator(1024, 128, charsAlphanumeric)
-		idsArray, err := generator.ToArray(ctx)
+		if err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
 
+		idsArray, err := generator.ToArray(ctx)
 		if !errors.Is(err, ctx.Err()) {
 			t.Fatalf("expected context error, got %v", err)
 		}
