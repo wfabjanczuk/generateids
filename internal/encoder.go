@@ -1,10 +1,10 @@
-package unique
+package internal
 
 import (
 	"math/rand"
 )
 
-type symmetricEncoder struct {
+type SymmetricEncoder struct {
 	idLength      int
 	pairEncodings map[pair]pair
 }
@@ -14,7 +14,7 @@ type pair struct {
 	c2 byte
 }
 
-func newSymmetricEncoder(random *rand.Rand, idLength int, charList []byte) *symmetricEncoder {
+func NewSymmetricEncoder(random *rand.Rand, idLength int, charList []byte) *SymmetricEncoder {
 	totalChars := len(charList)
 
 	pairs := make([]pair, 0, totalChars*totalChars)
@@ -35,13 +35,13 @@ func newSymmetricEncoder(random *rand.Rand, idLength int, charList []byte) *symm
 		pairEncodings[p] = shuffledPairs[i]
 	}
 
-	return &symmetricEncoder{
+	return &SymmetricEncoder{
 		idLength:      idLength,
 		pairEncodings: pairEncodings,
 	}
 }
 
-func (e *symmetricEncoder) encode(id []byte) {
+func (e *SymmetricEncoder) Encode(id []byte) {
 	i, j := 0, e.idLength-1
 
 	for i+1 < j {

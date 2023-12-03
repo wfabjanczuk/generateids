@@ -1,4 +1,4 @@
-package unique
+package internal
 
 import (
 	"errors"
@@ -7,15 +7,15 @@ import (
 )
 
 var (
-	ErrIdsToGenerateInvalid = errors.New("idsToGenerate must be greater than zero")
-	ErrIdLengthInvalid      = errors.New("idLength must be greater than zero")
+	errIdsToGenerateInvalid = errors.New("idsToGenerate must be greater than zero")
+	errIdLengthInvalid      = errors.New("idLength must be greater than zero")
 
-	ErrCharListInvalid = errors.New("invalid character list")
-	ErrCharListEmpty   = fmt.Errorf("%w: empty", ErrCharListInvalid)
+	errCharListInvalid = errors.New("invalid character list")
+	errCharListEmpty   = fmt.Errorf("%w: empty", errCharListInvalid)
 )
 
 func newCharacterDuplicatedError(duplicated byte) error {
-	return fmt.Errorf("%w: duplicated character %s", ErrCharListInvalid, string(duplicated))
+	return fmt.Errorf("%w: duplicated character %s", errCharListInvalid, string(duplicated))
 }
 
 func newUniquenessError(idsToGenerate, idLength, totalChars, maxToGenerate int) error {
@@ -25,18 +25,18 @@ func newUniquenessError(idsToGenerate, idLength, totalChars, maxToGenerate int) 
 	)
 }
 
-func validate(idsToGenerate, idLength int, charList []byte) error {
+func Validate(idsToGenerate, idLength int, charList []byte) error {
 	if idsToGenerate <= 0 {
-		return ErrIdsToGenerateInvalid
+		return errIdsToGenerateInvalid
 	}
 
 	if idLength <= 0 {
-		return ErrIdLengthInvalid
+		return errIdLengthInvalid
 	}
 
 	totalChars := len(charList)
 	if totalChars == 0 {
-		return ErrCharListEmpty
+		return errCharListEmpty
 	}
 
 	uniqueChars := make(map[byte]struct{})

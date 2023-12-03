@@ -1,4 +1,4 @@
-package unique
+package streamids
 
 import (
 	"context"
@@ -7,15 +7,20 @@ import (
 	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/wfabjanczuk/streamids/internal"
 )
 
-var ErrUsed = errors.New("generator can be used only once")
+var (
+	ErrUsed       = errors.New("generator can be used only once")
+	ErrValidation = errors.New("validation error")
+)
 
 const bufferSize = 100
 
 type Generator struct {
 	random       *rand.Rand
-	encoder      *symmetricEncoder
+	encoder      *internal.SymmetricEncoder
 	charList     []byte
 	idLength     int
 	idsScheduled int
@@ -36,14 +41,14 @@ func NewGeneratorWithSeed(idsToGenerate, idLength int, charList []byte, seed int
 }
 
 func newGenerator(idsToGenerate, idLength int, charList []byte, random *rand.Rand) (*Generator, error) {
-	err := validate(idsToGenerate, idLength, charList)
+	err := internal.Validate(idsToGenerate, idLength, charList)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %s", ErrValidation, err)
 	}
 
 	return &Generator{
 		random:       random,
-		encoder:      newSymmetricEncoder(random, idLength, charList),
+		encoder:      internal.NewSymmetricEncoder(random, idLength, charList),
 		charList:     charList,
 		idLength:     idLength,
 		idsScheduled: idsToGenerate,
@@ -101,9 +106,9 @@ func (g *Generator) ToChannel(ctx context.Context) (<-chan []byte, error) {
 func (g *Generator) streamToChannel(ctx context.Context, idsChan chan<- []byte) {
 	defer close(idsChan)
 
-	randomIndicesGen := newRandomIndicesGenerator(g.random, len(g.charList))
-	columns := make([]*uniformCharsGenerator, g.idLength)
-	columns[0] = newUniformCharsGenerator(g.idsScheduled, g.charList, randomIndicesGen)
+	randomIndicesGen := internal.NewRandomIndicesGenerator(g.random, len(g.charList))
+	columns := make([]*internal.UniformCharsGenerator, g.idLength)
+	columns[0] = internal.NewUniformCharsGenerator(g.idsScheduled, g.charList, randomIndicesGen)
 
 	idsCreated := 0
 	for idsCreated < g.idsScheduled {
@@ -115,21 +120,22 @@ func (g *Generator) streamToChannel(ctx context.Context, idsChan chan<- []byte) 
 		}
 
 		id := make([]byte, g.idLength)
-		id[0] = columns[0].next()
+		id[0] = columns[0].Next()
 
-		c := 1
-		for c < g.idLength {
-			uniformCharsGen := columns[c]
-			if uniformCharsGen.empty() {
-				uniformCharsGen = newUniformCharsGenerator(columns[c-1].currentCharCount, g.charList, randomIndicesGen)
-				columns[c] = uniformCharsGen
+		columnIndex := 1
+		for columnIndex < g.idLength {
+			uniformCharsGen := columns[columnIndex]
+			if uniformCharsGen.Empty() {
+				previousColumnJobSize := columns[columnIndex-1].CurrentJobSize
+				uniformCharsGen = internal.NewUniformCharsGenerator(previousColumnJobSize, g.charList, randomIndicesGen)
+				columns[columnIndex] = uniformCharsGen
 			}
 
-			id[c] = uniformCharsGen.next()
-			c++
+			id[columnIndex] = uniformCharsGen.Next()
+			columnIndex++
 		}
 
-		g.encoder.encode(id)
+		g.encoder.Encode(id)
 		idsChan <- id
 		idsCreated++
 	}

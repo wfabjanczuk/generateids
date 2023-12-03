@@ -1,4 +1,4 @@
-package unique
+package internal
 
 type charJob struct {
 	char            byte
@@ -8,12 +8,12 @@ type charJob struct {
 	next *charJob
 }
 
-type uniformCharsGenerator struct {
-	head             *charJob
-	currentCharCount int
+type UniformCharsGenerator struct {
+	head           *charJob
+	CurrentJobSize int
 }
 
-func newUniformCharsGenerator(idsToGenerate int, charList []byte, randomIndicesGen *randomIndicesGenerator) *uniformCharsGenerator {
+func NewUniformCharsGenerator(idsToGenerate int, charList []byte, randomIndicesGen *RandomIndicesGenerator) *UniformCharsGenerator {
 	totalChars := len(charList)
 	charOccurrencesList := make([]int, totalChars)
 
@@ -24,10 +24,10 @@ func newUniformCharsGenerator(idsToGenerate int, charList []byte, randomIndicesG
 
 	capacityLeft := idsToGenerate - totalChars*minCharOccurrences
 	for i := 0; i < capacityLeft; i++ {
-		charOccurrencesList[randomIndicesGen.next()]++
+		charOccurrencesList[randomIndicesGen.Next()]++
 	}
 
-	uniformCharsGen := &uniformCharsGenerator{}
+	uniformCharsGen := &UniformCharsGenerator{}
 	for charIndex, charOccurrences := range charOccurrencesList {
 		if charOccurrences > 0 {
 			uniformCharsGen.push(&charJob{
@@ -41,7 +41,7 @@ func newUniformCharsGenerator(idsToGenerate int, charList []byte, randomIndicesG
 	return uniformCharsGen
 }
 
-func (cg *uniformCharsGenerator) empty() bool {
+func (cg *UniformCharsGenerator) Empty() bool {
 	if cg == nil {
 		return true
 	}
@@ -49,7 +49,24 @@ func (cg *uniformCharsGenerator) empty() bool {
 	return cg.head == nil
 }
 
-func (cg *uniformCharsGenerator) push(job *charJob) {
+func (cg *UniformCharsGenerator) Next() byte {
+	char := cg.head.char
+	cg.head.writesFinished++
+
+	if cg.head.writesFinished == 1 {
+		cg.CurrentJobSize = cg.head.writesScheduled
+	}
+
+	if cg.head.writesFinished == cg.head.writesScheduled {
+		tmp := cg.head.next
+		cg.head.next = nil
+		cg.head = tmp
+	}
+
+	return char
+}
+
+func (cg *UniformCharsGenerator) push(job *charJob) {
 	if cg.head == nil {
 		cg.head = job
 		return
@@ -61,21 +78,4 @@ func (cg *uniformCharsGenerator) push(job *charJob) {
 	}
 
 	last.next = job
-}
-
-func (cg *uniformCharsGenerator) next() byte {
-	char := cg.head.char
-	cg.head.writesFinished++
-
-	if cg.head.writesFinished == 1 {
-		cg.currentCharCount = cg.head.writesScheduled
-	}
-
-	if cg.head.writesFinished == cg.head.writesScheduled {
-		tmp := cg.head.next
-		cg.head.next = nil
-		cg.head = tmp
-	}
-
-	return char
 }

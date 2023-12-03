@@ -1,4 +1,4 @@
-package unique
+package streamids
 
 import (
 	"context"
