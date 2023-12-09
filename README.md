@@ -1,16 +1,22 @@
-# streamids
+# generateids
 
 ```
-GUJCLYPH3DSBKUGTR5W13FK77555PPBRWD89PIWGLTBORT7ROC3YLGR6SGTUJR98
-S9JXJGLMK94N20KWO52EINZSLUZX3KN2FQ1ABA4MLBF8N6QW93SA68DUL2FM9ZN3
-APPIQDB2C25MCPVUDL14NGELTYTMU8J8LDXNORXZDCIHCGRWDHW6VJWQJKUFZ8AC
-89ZIIR252QGY18P4WKQGX29Y0PJZOVRMO8APTPBL89YHISQNFK4IO1PB7L1DUWZN
-2AJEVNITF3T307WXRLPHZV97J840GGGUT06TSKH4HZEX8B5DSFZK7LRBPECXJRBJ
+YMRMT2OX5WS7JUDSYEREBEFQR73Z407ZCPS2IJTV33ADVUAPPBTO0H39RK8LXSLFDL8SR17DUUGUORZV
+W8Y271N4NGE6SA4XYYUX3A1609BRT11FCG9UFLBKJNLHTBH58DUTAORSCM23NZ2QEBMLU246CZ9KWCJT
+497XIFS514YIWOFAPPH0KU56YOU1LFGZRPLB098GL07ZS4599PIEOVY0X3MDGSW6704VZ4JVHFWLCO1S
+Z7QAUKXAQ0XTQ435JH32F20AJ9CDY8QMTIEEL709ZCIRP2PTWLAORJRBV8HGESEIE972M6KA8WC5YZPN
+BTTPM4B9LKF1RT3SHJ36ARTLFTWQD4TAYLNTPNT6TA6CEBNQV4EBILNYU0J29KZT9SBI0KFYBIXSP1LG
 ...
 ```
 
-Library for generating a large number of unique IDs in a randomized order.
+Toy library for generating a large number of unique IDs in a randomized order.
 Provides a channel for retrieving them one by one.
+
+## Installation
+
+```shell
+go get github.com/wfabjanczuk/generateids 
+```
 
 ## Description
 
@@ -35,37 +41,34 @@ func NewGeneratorWithSeed(idsToGenerate, idLength int, charList []byte, seed int
 
 ### Generating ids
 
-To start generating ids, choose the method depending on your needs:
+To generate ids, choose the method depending on your needs:
 
 ```go
-func (g *Generator) ToArray(ctx context.Context) ([][]byte, error)
-func (g *Generator) ToChannel(ctx context.Context) (<-chan []byte, error)
+func (g *Generator) Array(ctx context.Context) ([][]byte, error)
+func (g *Generator) Channel(ctx context.Context) (<-chan []byte, error)
 ```
 
-**Generator** stops generating new ids when the provided context is cancelled
-and wrapped context error is available, for example:
+`Channel` method returns a buffered channel, which is closed when the job is finished.
 
-```
-stopped generating ids at 59079: context deadline exceeded
-```
-
-Checking the error depends on the method:
-
-* in case of `ToArray` method, wrapped context error can be obtained directly from the returned values,
-* in case of `ToChannel` method, wrapped context error will be available after
-  the returned channel is closed with the `Err` method.
+If the provided context is cancelled during the process of generating ids, 
+wrapped context error is available from `InterruptionErr` method:
 
 ```go
-func (g *Generator) Err() error
+func (g *Generator) InterruptionErr() error
+// stopped generating ids at 59079: context deadline exceeded
 ```
+
+* in case of `Array` method, wrapped context error can be also obtained directly from the returned values,
+* in case of `Channel` method, wrapped context error will be available only from the `InterruptionErr` method after
+  the returned channel is closed.
 
 ### Warning
 
-**Generator** struct is designed for a one-time use. Running either `ToArray` or `ToChannel` methods again
+**Generator** struct is designed for a one-time use. Running either `Array` or `Channel` methods again
 will result in an error:
 
 ```
-generator can be used only once: create a new instance for another stream of ids
+generator can be used only once: create a new instance for another set of ids
 ```
 
 ## Examples

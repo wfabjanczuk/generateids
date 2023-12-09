@@ -1,4 +1,4 @@
-package streamids
+package generateids
 
 import (
 	"context"
@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/wfabjanczuk/streamids/internal"
+	"github.com/wfabjanczuk/generateids/internal"
 )
 
 var (
-	ErrUsed       = errors.New("generator can be used only once: create a new instance for another stream of ids")
+	ErrUsed       = errors.New("generator can be used only once: create a new instance for another set of ids")
 	ErrValidation = errors.New("validation error")
 )
 
@@ -25,9 +25,9 @@ type Generator struct {
 	idLength     int
 	idsScheduled int
 
-	mu   sync.Mutex
-	used bool
-	err  error
+	mu              sync.Mutex
+	used            bool
+	interruptionErr error
 }
 
 func NewGenerator(idsToGenerate, idLength int, charList []byte) (*Generator, error) {
@@ -56,19 +56,22 @@ func newGenerator(idsToGenerate, idLength int, charList []byte, random *rand.Ran
 	}, nil
 }
 
-func (g *Generator) Err() error {
+func (g *Generator) InterruptionErr() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
-	return g.err
+	return g.interruptionErr
 }
 
-func (g *Generator) ToArray(ctx context.Context) ([][]byte, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
+func (g *Generator) setInterruptionErr(idsGenerated int, err error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
 
-	err := g.markUsed()
+	g.interruptionErr = fmt.Errorf("stopped generating ids at %d: %w", idsGenerated, err)
+}
+
+func (g *Generator) Array(ctx context.Context) ([][]byte, error) {
+	err := g.start(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -81,18 +84,11 @@ func (g *Generator) ToArray(ctx context.Context) ([][]byte, error) {
 		results = append(results, id)
 	}
 
-	g.mu.Lock()
-	defer g.mu.Unlock()
-
-	return results, g.err
+	return results, g.InterruptionErr()
 }
 
-func (g *Generator) ToChannel(ctx context.Context) (<-chan []byte, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-
-	err := g.markUsed()
+func (g *Generator) Channel(ctx context.Context) (<-chan []byte, error) {
+	err := g.start(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -110,12 +106,10 @@ func (g *Generator) streamToChannel(ctx context.Context, idsChan chan<- []byte) 
 	columns := make([]*internal.UniformCharsGenerator, g.idLength)
 	columns[0] = internal.NewUniformCharsGenerator(g.idsScheduled, g.charList, uniformIndicesGen)
 
-	idsCreated := 0
-	for idsCreated < g.idsScheduled {
+	idsGenerated := 0
+	for idsGenerated < g.idsScheduled {
 		if err := ctx.Err(); err != nil {
-			g.mu.Lock()
-			g.err = fmt.Errorf("stopped generating ids at %d: %w", idsCreated, err)
-			g.mu.Unlock()
+			g.setInterruptionErr(idsGenerated, err)
 			return
 		}
 
@@ -137,8 +131,21 @@ func (g *Generator) streamToChannel(ctx context.Context, idsChan chan<- []byte) 
 
 		g.encoder.Encode(id)
 		idsChan <- id
-		idsCreated++
+		idsGenerated++
 	}
+}
+
+func (g *Generator) start(ctx context.Context) error {
+	err := g.markUsed()
+	if err != nil {
+		return err
+	}
+
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (g *Generator) markUsed() error {

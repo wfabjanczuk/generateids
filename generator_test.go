@@ -1,4 +1,4 @@
-package streamids
+package generateids
 
 import (
 	"context"
@@ -59,16 +59,16 @@ func TestNewGenerator_Validation(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		runExpectedErrorTest(t, tc.name, tc.args.idsToGenerate, tc.args.idLength, tc.args.charList)
+		runExpectedValidationErrorTest(t, tc.name, tc.args.idsToGenerate, tc.args.idLength, tc.args.charList)
 	}
 }
 
-func runExpectedErrorTest(t *testing.T, testName string, idsToGenerate, idLength int, charList []byte) {
+func runExpectedValidationErrorTest(t *testing.T, testName string, idsToGenerate, idLength int, charList []byte) {
 	t.Run(testName, func(t *testing.T) {
 		_, err := NewGenerator(idsToGenerate, idLength, charList)
 
-		if err == nil {
-			t.Fatal("expected error, got nil")
+		if !errors.Is(err, ErrValidation) {
+			t.Errorf("expected validation error, got %v", err)
 		}
 	})
 }
@@ -84,7 +84,7 @@ func TestGenerator_Seed(t *testing.T) {
 
 		for index, id := range idsArray1 {
 			if string(id) != string(idsArray2[index]) {
-				t.Fatalf("expected %s, got %s", id, idsArray2[index])
+				t.Errorf("expected %s, got %s", id, idsArray2[index])
 			}
 		}
 	})
@@ -93,51 +93,60 @@ func TestGenerator_Seed(t *testing.T) {
 func generateIdsWithSeed(t *testing.T, idsToGenerate, idLength int, charList []byte, seed int64) [][]byte {
 	generator, err := NewGeneratorWithSeed(idsToGenerate, idLength, charList, seed)
 	if err != nil {
-		t.Fatalf("unexpected error: %s", err)
+		t.Fatalf("unexpected constructor error: %s", err)
 	}
 
-	idsArray, err := generator.ToArray(context.Background())
+	idsArray, err := generator.Array(context.Background())
 	if err != nil {
-		t.Fatalf("unexpected error: %s", err)
+		t.Fatalf("unexpected array method error: %s", err)
+	}
+	if generator.InterruptionErr() != nil {
+		t.Errorf("expected no interruptionErr, got %v", err)
 	}
 
 	if len(idsArray) != idsToGenerate {
-		t.Fatalf("expected %d results, got %d", idsToGenerate, len(idsArray))
+		t.Errorf("expected %d results, got %d", idsToGenerate, len(idsArray))
 	}
 
 	return idsArray
 }
 
-func TestGenerator_ToArray(t *testing.T) {
+func TestGenerator_Array(t *testing.T) {
 	t.Run("returns no error when unique combinations are possible", func(t *testing.T) {
 		idsToGenerate := 4
 
 		generator, err := NewGenerator(idsToGenerate, 2, charsAB)
 		if err != nil {
-			t.Fatalf("unexpected error: %s", err)
+			t.Fatalf("unexpected constructor error: %s", err)
 		}
 
-		idsArray, err := generator.ToArray(context.Background())
+		idsArray, err := generator.Array(context.Background())
 		if err != nil {
-			t.Fatalf("unexpected error: %s", err)
+			t.Fatalf("unexpected array method error: %s", err)
+		}
+		if generator.InterruptionErr() != nil {
+			t.Errorf("expected no interruptionErr, got %v", err)
 		}
 
 		if len(idsArray) != idsToGenerate {
-			t.Fatalf("expected %d results, got %d", idsToGenerate, len(idsArray))
+			t.Errorf("expected %d results, got %d", idsToGenerate, len(idsArray))
 		}
 	})
 }
 
-func TestGenerator_ToChannel(t *testing.T) {
+func TestGenerator_Channel(t *testing.T) {
 	t.Run("returns no error when unique combinations are possible", func(t *testing.T) {
 		generator, err := NewGenerator(4, 2, charsAB)
 		if err != nil {
-			t.Fatalf("unexpected error: %s", err)
+			t.Fatalf("unexpected constructor error: %s", err)
 		}
 
-		idsChan, err := generator.ToChannel(context.Background())
+		idsChan, err := generator.Channel(context.Background())
 		if err != nil {
-			t.Fatalf("unexpected error: %s", err)
+			t.Fatalf("unexpected channel method error: %s", err)
+		}
+		if generator.InterruptionErr() != nil {
+			t.Errorf("expected no interruptionErr, got %v", err)
 		}
 
 		idsCount := 0
@@ -146,7 +155,7 @@ func TestGenerator_ToChannel(t *testing.T) {
 		}
 
 		if idsCount != 4 {
-			t.Fatalf("expected %d results, got %d", 4, idsCount)
+			t.Errorf("expected %d results, got %d", 4, idsCount)
 		}
 	})
 }
@@ -173,19 +182,26 @@ func runUniquenessTest(t *testing.T, idsToGenerate, idLength int, charList []byt
 	t.Run(testName, func(t *testing.T) {
 		generator, err := NewGenerator(idsToGenerate, idLength, charList)
 		if err != nil {
-			t.Fatalf("unexpected error: %s", err)
+			t.Fatalf("unexpected constructor error: %s", err)
 		}
 
-		results, err := generator.ToArray(context.Background())
+		results, err := generator.Array(context.Background())
+		if err != nil {
+			t.Fatalf("unexpected array method error: %s", err)
+		}
+		if generator.InterruptionErr() != nil {
+			t.Errorf("expected no interruptionErr, got %v", err)
+		}
+
 		if len(results) != idsToGenerate {
-			t.Fatalf("expected %d results, got %d", idsToGenerate, len(results))
+			t.Errorf("expected %d results, got %d", idsToGenerate, len(results))
 		}
 
 		uniqueIDs := make(map[string]struct{})
 		for _, id := range results {
 			_, exists := uniqueIDs[string(id)]
 			if exists {
-				t.Fatalf("expected unique IDs, got duplicated %s", id)
+				t.Errorf("expected unique IDs, got duplicated %s", id)
 			}
 			uniqueIDs[string(id)] = struct{}{}
 		}
@@ -193,38 +209,63 @@ func runUniquenessTest(t *testing.T, idsToGenerate, idLength int, charList []byt
 }
 
 func TestGenerator_Context(t *testing.T) {
-	t.Run("returns no ids when given cancelled context", func(t *testing.T) {
+	t.Run("array method returns no ids when given cancelled context", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
 		generator, err := NewGenerator(1024, 128, charsAlphanumeric)
 		if err != nil {
-			t.Fatalf("unexpected error: %s", err)
+			t.Fatalf("unexpected constructor error: %s", err)
 		}
 
-		idsArray, err := generator.ToArray(ctx)
+		idsArray, err := generator.Array(ctx)
 		if !errors.Is(err, ctx.Err()) {
-			t.Fatalf("expected context error, got %v", err)
+			t.Errorf("expected context error returned from array method, got %v", err)
+		}
+		if generator.InterruptionErr() != nil {
+			t.Errorf("expected no interruptionErr, got %v", err)
 		}
 
 		if len(idsArray) != 0 {
-			t.Fatalf("expected no ids, got %d", len(idsArray))
+			t.Errorf("expected no ids, got %d", len(idsArray))
 		}
 	})
 
-	t.Run("stops streaming ids when context is cancelled", func(t *testing.T) {
+	t.Run("channel method returns no channel when given cancelled context", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		generator, err := NewGenerator(1024, 128, charsAlphanumeric)
+		if err != nil {
+			t.Fatalf("unexpected constructor error: %s", err)
+		}
+
+		idsChannel, err := generator.Channel(ctx)
+		if !errors.Is(err, ctx.Err()) {
+			t.Errorf("expected context error returned from array method, got %v", err)
+		}
+		if generator.InterruptionErr() != nil {
+			t.Errorf("expected no interruptionErr, got %v", err)
+		}
+
+		if idsChannel != nil {
+			t.Errorf("expected nil channel, got %v", idsChannel)
+		}
+	})
+
+	t.Run("stops generating ids when context is cancelled", func(t *testing.T) {
 		generator, err := NewGenerator(10*bufferSize, 128, charsAlphanumeric)
 		if err != nil {
-			t.Fatalf("unexpected error: %s", err)
+			t.Fatalf("unexpected constructor error: %s", err)
 		}
 
 		timeout := 50 * time.Millisecond
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
-		idsChan, err := generator.ToChannel(ctx)
+		idsChan, err := generator.Channel(ctx)
 		if err != nil {
-			t.Fatalf("unexpected error: %s", err)
+			t.Fatalf("unexpected channel method error: %s", err)
 		}
 
 		time.Sleep(2 * timeout)
@@ -233,12 +274,11 @@ func TestGenerator_Context(t *testing.T) {
 			idsCount++
 		}
 
-		if idsCount > bufferSize+1 {
-			t.Fatalf("expected at most %d ids, got %d", bufferSize+1, idsCount)
+		if !errors.Is(generator.InterruptionErr(), ctx.Err()) {
+			t.Errorf("expected interruptionErr to be context error, got %v", generator.InterruptionErr())
 		}
-
-		if !errors.Is(generator.Err(), ctx.Err()) {
-			t.Fatalf("expected context error, got %v", generator.Err())
+		if idsCount > bufferSize+1 {
+			t.Errorf("expected at most %d ids, got %d", bufferSize+1, idsCount)
 		}
 	})
 }
@@ -248,7 +288,7 @@ func TestGenerator_OneTimeUse(t *testing.T) {
 		idsToGenerate := 1
 		generator, err := NewGenerator(idsToGenerate, 1, charsAB)
 		if err != nil {
-			t.Fatalf("unexpected error: %s", err)
+			t.Fatalf("unexpected constructor error: %s", err)
 		}
 
 		goroutines := 10
@@ -262,7 +302,7 @@ func TestGenerator_OneTimeUse(t *testing.T) {
 			go func() {
 				defer wg.Done()
 
-				idsArray, err := generator.ToArray(context.Background())
+				idsArray, err := generator.Array(context.Background())
 				if err != nil {
 					errChan <- err
 					return
@@ -287,7 +327,7 @@ func TestGenerator_OneTimeUse(t *testing.T) {
 		}
 
 		if errorsCount != goroutines-1 {
-			t.Fatalf("expected %d errors, got %d", goroutines-1, errorsCount)
+			t.Errorf("expected %d errors, got %d", goroutines-1, errorsCount)
 		}
 
 		var result [][]byte
@@ -298,11 +338,11 @@ func TestGenerator_OneTimeUse(t *testing.T) {
 		}
 
 		if resultsCount != 1 {
-			t.Fatalf("expected one array of ids, got %d", resultsCount)
+			t.Errorf("expected one array of ids, got %d", resultsCount)
 		}
 
 		if len(result) != idsToGenerate {
-			t.Fatalf("expected %d results, got %d", idsToGenerate, len(result))
+			t.Errorf("expected %d results, got %d", idsToGenerate, len(result))
 		}
 	})
 }
@@ -328,7 +368,7 @@ func runGeneratorBenchmark(b *testing.B, idsToGenerate, idLength int, charList [
 	b.Run(testName, func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			generator, _ := NewGenerator(idsToGenerate, idLength, charList)
-			_, _ = generator.ToArray(context.Background())
+			_, _ = generator.Array(context.Background())
 		}
 	})
 }

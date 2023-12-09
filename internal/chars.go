@@ -23,8 +23,14 @@ func NewUniformCharsGenerator(idsToGenerate int, charList []byte, uniformIndices
 	}
 
 	capacityLeft := idsToGenerate - totalChars*minCharOccurrences
-	for i := 0; i < capacityLeft; i++ {
-		charOccurrencesList[uniformIndicesGen.next()]++
+	if capacityLeft > 0 {
+		if uniformIndicesGen.generatedAll() {
+			uniformIndicesGen.shuffle()
+		}
+
+		for i := 0; i < capacityLeft; i++ {
+			charOccurrencesList[uniformIndicesGen.next()]++
+		}
 	}
 
 	uniformCharsGen := &UniformCharsGenerator{}

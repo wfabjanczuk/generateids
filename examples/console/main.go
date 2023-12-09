@@ -6,14 +6,14 @@ import (
 	"math"
 	"time"
 
-	"github.com/wfabjanczuk/streamids"
+	"github.com/wfabjanczuk/generateids"
 )
 
 func main() {
 	now := time.Now()
 
 	alphanumericCharList := []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	generator, err := streamids.NewGenerator(math.MaxInt, 128, alphanumericCharList)
+	generator, err := generateids.NewGenerator(math.MaxInt, 128, alphanumericCharList)
 	if err != nil {
 		panic(err)
 	}
@@ -22,7 +22,7 @@ func main() {
 	//ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	//defer cancel()
 
-	idsChan, err := generator.ToChannel(ctx)
+	idsChan, err := generator.Channel(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -36,7 +36,7 @@ func main() {
 		}
 	}
 
-	if err := generator.Err(); err != nil {
+	if err := generator.InterruptionErr(); err != nil {
 		panic(err)
 	}
 }

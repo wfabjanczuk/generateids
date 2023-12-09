@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/wfabjanczuk/streamids"
+	"github.com/wfabjanczuk/generateids"
 )
 
 func main() {
@@ -17,14 +17,14 @@ func main() {
 	}()
 
 	alphanumericCharList := []byte("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	generator, err := streamids.NewGenerator(1_000_000, 128, alphanumericCharList)
+	generator, err := generateids.NewGenerator(1_000_000, 128, alphanumericCharList)
 	check(err)
 
 	ctx := context.Background()
 	//ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	//defer cancel()
 
-	idsChan, err := generator.ToChannel(ctx)
+	idsChan, err := generator.Channel(ctx)
 	check(err)
 
 	f, err := os.Create("results.txt")
@@ -42,9 +42,7 @@ func main() {
 		check(err)
 	}
 
-	if err := generator.Err(); err != nil {
-		check(err)
-	}
+	check(generator.InterruptionErr())
 }
 
 func check(err error) {
