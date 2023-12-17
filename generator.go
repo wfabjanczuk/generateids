@@ -18,23 +18,30 @@ var (
 
 const bufferSize = 100
 
+// Generator is a one-time use structure for generating a set of unique ids given their number, length
+// and list of characters (bytes). Provides Array and Channel methods that can be used depending on your needs.
+// To generate another set of ids, create a new instance of the Generator.
 type Generator struct {
-	random       *rand.Rand
-	encoder      *internal.SymmetricEncoder
-	charList     []byte
-	idLength     int
-	idsScheduled int
-
-	mu              sync.Mutex
+	random          *rand.Rand
+	encoder         *internal.SymmetricEncoder
+	charList        []byte
+	idLength        int
+	idsScheduled    int
 	used            bool
 	interruptionErr error
+	mu              sync.Mutex
 }
 
+// NewGenerator is a basic constructor that requires the number of ids to generate, length of each id
+// and list of characters (bytes) to generate the ids from.
+// By default, internal random number generator is seeded with the current time in nanoseconds.
 func NewGenerator(idsToGenerate, idLength int, charList []byte) (*Generator, error) {
 	random := rand.New(rand.NewSource(time.Now().UnixNano()))
 	return newGenerator(idsToGenerate, idLength, charList, random)
 }
 
+// NewGeneratorWithSeed is an alternative constructor that additionally requires custom seed
+// for the internal random number generator.
 func NewGeneratorWithSeed(idsToGenerate, idLength int, charList []byte, seed int64) (*Generator, error) {
 	random := rand.New(rand.NewSource(seed))
 	return newGenerator(idsToGenerate, idLength, charList, random)
@@ -56,6 +63,11 @@ func newGenerator(idsToGenerate, idLength int, charList []byte, random *rand.Ran
 	}, nil
 }
 
+// InterruptionErr will return wrapped context error, if the context passed to either Array or Channel
+// is cancelled during the process of generating ids.
+//   - in case of Array method, wrapped context error can be also obtained directly from the returned values,
+//   - in case of Channel method, wrapped context error will be available only from the InterruptionErr method after
+//     the returned channel is closed.
 func (g *Generator) InterruptionErr() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -70,6 +82,7 @@ func (g *Generator) setInterruptionErr(idsGenerated int, err error) {
 	g.interruptionErr = fmt.Errorf("stopped generating ids at %d: %w", idsGenerated, err)
 }
 
+// Array method generates the set of ids specified in the Generator constructor and saves them into an array.
 func (g *Generator) Array(ctx context.Context) ([][]byte, error) {
 	err := g.start(ctx)
 	if err != nil {
@@ -87,6 +100,8 @@ func (g *Generator) Array(ctx context.Context) ([][]byte, error) {
 	return results, g.InterruptionErr()
 }
 
+// Channel method starts generating the set of ids specified in the Generator constructor
+// and returns a channel to retrieve them one by one.
 func (g *Generator) Channel(ctx context.Context) (<-chan []byte, error) {
 	err := g.start(ctx)
 	if err != nil {
