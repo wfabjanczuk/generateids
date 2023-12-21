@@ -44,7 +44,7 @@ func NewSymmetricEncoder(random *rand.Rand, idLength int, charList []byte) *Symm
 func (e *SymmetricEncoder) Encode(id []byte) {
 	i, j := 0, e.idLength-1
 
-	for i+1 < j {
+	for i+1 <= j {
 		encoding := e.pairEncodings[pair{id[i], id[j]}]
 		id[i] = encoding.c1
 		id[j] = encoding.c2
