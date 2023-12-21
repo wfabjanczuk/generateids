@@ -32,8 +32,6 @@ func main() {
 	defer f.Close()
 
 	bufWriter := bufio.NewWriter(f)
-	defer bufWriter.Flush()
-
 	for id := range idsChan {
 		_, err = bufWriter.Write(id)
 		check(err)
@@ -42,6 +40,7 @@ func main() {
 		check(err)
 	}
 
+	check(bufWriter.Flush())
 	check(generator.InterruptionErr())
 }
 
